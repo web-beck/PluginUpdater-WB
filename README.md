@@ -152,10 +152,5 @@ plugins:
 
 ---
 
-## ✅ Recommended File Name
-
-Save this file as:
-
-```text
 README.md
 ```
