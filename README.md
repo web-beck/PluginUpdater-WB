@@ -1,160 +1,213 @@
 # 🔄 PluginUpdater-WB
 
-> Automatically detect, download, and manage plugin updates for your Paper/Spigot Minecraft server — all from in-game or the console.
+PluginUpdater-WB is a next-generation plugin manager designed specifically for modern Paper servers. It completely automates the process of checking, tracking, downloading, and backing up your server's plugins.
+
+Built with native `java.net.http.HttpClient` and `CompletableFuture`, it operates 100% asynchronously. Your main server thread will never freeze or lag, no matter how many plugins you are checking or downloading.
 
 ---
 
-## ✨ Features
+## ✨ Key Features
 
-- **Auto-update detection** — Checks all tracked plugins on startup and alerts admins on join
-- **Modrinth & GitHub support** — Pulls updates from both platforms automatically
-- **Custom URL support** — Stage downloads from any direct `.jar` URL
-- **Smart version matching** — Intelligently strips suffixes like `-paper`, `-release`, `v`, `+build` before comparing versions
-- **Release channel control** — Track `release`, `beta`, `alpha`, or `all` per-plugin or globally
-- **Server type override** — Set your loader globally (`paper`, `spigot`, `folia`, `purpur`, or `auto`)
-- **Automatic backups** — Keeps the 2 most recent backups before overwriting a plugin
-- **One-click rollback** — Restore a previous backup version with a clickable in-game button
-- **Geyser addon management** — Download and update Geyser, Floodgate, and MCXboxBroadcast separately
-- **Interactive chat UI** — Clickable buttons in chat for updates, toggling, tracking, and rollbacks
-- **Action bar progress** — See which plugin is being checked in real time
-- **Tab completion** — Full tab completion on all subcommands
+### ⚡ Fully Asynchronous
 
----
+Zero impact on server performance. All HTTP requests, API parsing, and file downloading happen in the background.
 
-## 📋 Requirements
+### 🧠 Smart Config Syncing & Auto-Cleanup
 
-- Paper (or Spigot/Folia/Purpur) **26.1+**
-- Java **11+**
+Drop it into your server and restart. The plugin will automatically detect every installed plugin and populate the `config.yml` for you. If you delete a plugin `.jar`, it automatically cleans it from the config!
 
----
+### 🔄 Multi-Platform Support
 
-## 🚀 Installation
+Native API integration with Modrinth and GitHub Releases. Also supports raw Custom URLs for direct downloads.
 
-1. Download the latest release and place the `.jar` in your `/plugins/` folder
-2. Start or restart your server — the plugin will auto-generate `config.yml` and detect all installed plugins
-3. Review the config, set your `server-type-override` and `minecraft-version`, then use `/upd check`
+### 🖥️ Server-Type Awareness
 
----
+Accurately downloads the correct `.jar` for your specific server loader:
 
-## ⚙️ Configuration
+- Paper
+- Spigot
+- Purpur
+- Folia
+- Bukkit
 
-```yaml
-minecraft-version: "26.1.2"       # MC version used when querying Modrinth
-server-type-override: "paper"     # Global loader type: auto, paper, spigot, folia, purpur
-allowed-players:
-  - "AdminName"                    # Non-op players allowed to use the updater
+### 🧰 Dedicated Geyser Manager
 
-geyser-addons:
-  enabled: false
-  Geyser: true
-  Floodgate: true
-  MCXboxBroadcast: true
+Native, built-in management for updating and tracking:
 
-plugins:
-  # Example entries (these won't be auto-removed):
-  WorldEdit-Example:
-    enabled: true
-    type: MODRINTH               # MODRINTH | GITHUB | CUSTOM
-    project-id: worldedit
-    allowed-release-types:
-      - release
-    current-version: 7.3.1
+- Geyser-Spigot
+- Floodgate
+- MCXboxBroadcast
 
-  EssentialsX-Example:
-    enabled: true
-    type: GITHUB
-    github-repo: EssentialsX/Essentials
-    allowed-release-types:
-      - release
-    current-version: 2.20.1
+The auto-scanner smartly ignores these so you can manage them in their own dedicated interactive hub!
 
-  CustomPlugin-Example:
-    enabled: true
-    type: CUSTOM
-    custom-url: "https://example.com/myplugin.jar"
-    current-version: 1.0.0
-```
+### 🛡️ Automated Backups & Rollbacks
 
-All installed plugins are auto-detected and added to the `plugins` section. Uninstalled plugins are automatically removed on reload.
+Before downloading an update, the plugin automatically copies your current `.jar` into a `backups/` folder, keeping only the 2 most recent backups to save space.
+
+Revert updates instantly with:
+
+`/upd plugin rollback`
+
+### 🎛️ Granular Tracking
+
+By default, the plugin safely tracks only `Release` builds.
+
+Use the interactive menu to track the following channels on a per-plugin basis or globally:
+
+- Alpha
+- Beta
+- Release
+- All
+
+### 🖱️ Interactive Chat UI
+
+Built with Kyori Adventure! Almost every command features rich, clickable buttons and hover-text for a seamless admin experience.
 
 ---
 
 ## 🛠️ Commands
 
-All commands use `/updater` or the shorthand `/upd`.
+**Alias:** `/updater` or `/upd`
+
+**Permission:** `pluginupdater.admin`
+
+Defaults to OP. You can also whitelist specific usernames in the `config.yml`.
+
+---
+
+## 🟢 Core Commands
 
 | Command | Description |
 |---|---|
-| `/upd help` | Show the help menu |
-| `/upd check` | Check all plugins for updates |
-| `/upd run [plugin]` | Download all (or one) pending updates |
-| `/upd reload` | Reload config and sync installed plugins |
-| `/upd list` | List pending updates |
-| `/upd list all` | List all tracked plugins with status |
-| `/upd list versions` | Show current vs latest versions |
-| `/upd list enabled` | Show all enabled plugins |
-| `/upd list disabled` | Show all disabled plugins |
-| `/upd plugin info <name>` | Show version & channel info for a plugin |
-| `/upd plugin track <name\|all> <release\|beta\|alpha\|all>` | Set update channel |
-| `/upd plugin track server <type>` | Set global server type override |
-| `/upd plugin redownload <name>` | Force a fresh download of a plugin |
-| `/upd plugin rollback <name> [file]` | Open the backup restore menu |
-| `/upd plugin geyser` | Manage Geyser addons |
-| `/upd plugin geyser download <all\|Geyser\|Floodgate\|MCXboxBroadcast>` | Download missing addons |
-| `/upd plugin geyser update <all\|Geyser\|Floodgate\|MCXboxBroadcast>` | Force-update addons |
+| `/upd help` | Shows the interactive help menu. |
+| `/upd check` | Manually triggers the async update checker. Admins get notified automatically on join if updates are found. |
+| `/upd run [PluginName]` | Downloads all pending updates to the `update/` folder, applied on next restart. Provide a plugin name to only update that specific plugin. |
+| `/upd reload` | Reloads the `config.yml` and synchronizes the list of loaded plugins. |
 
 ---
 
-## 🔐 Permissions
+## 📋 List Commands
 
-| Permission | Description |
+| Command | Description |
 |---|---|
-| `pluginupdater.admin` | Full access to all commands |
-| OP | Grants full access by default |
-| `allowed-players` list | Non-op players listed in config also get access |
+| `/upd list` | Shows a clean list of only the plugins that currently have pending updates. Includes a clickable `[CLICK TO UPDATE]` button. |
+| `/upd list all` | Displays the status of every tracked plugin, including its source, server type, and current version. |
+| `/upd list versions` | Bypasses your channel filters, like release-only, to fetch the absolute newest physical releases available on the APIs. |
+| `/upd list enabled` | Shows all currently enabled plugins with a clickable `[DISABLE]` button. |
+| `/upd list disabled` | Shows all currently disabled plugins with a clickable `[ENABLE]` button. |
 
 ---
 
-## 🔁 How Updates Work
+## 🔧 Plugin Management Commands
 
-1. On startup (1-tick delay), all tracked plugins are checked asynchronously
-2. Detected updates are stored in memory as **pending**
-3. Use `/upd list` to see pending updates with clickable **[CLICK TO UPDATE]** buttons
-4. Clicking (or running `/upd run`) downloads the new `.jar` to the server's `/update/` folder and backs up the old one
-5. **Restart the server** to apply the staged update
+| Command | Description |
+|---|---|
+| `/upd plugin info <PluginName>` | Displays an interactive menu showing the current version, downloaded server loader type, tracked channels, and the latest versions across all channels. |
+| `/upd plugin track <PluginName\|all>` | Opens an interactive menu to adjust tracking channels and server-loader overrides for a plugin. You can also supply arguments directly, such as `/upd plugin track all beta`. |
+| `/upd plugin track server <type>` | Sets the global server-type override. Options include `auto`, `paper`, `spigot`, `purpur`, and `folia`. |
+| `/upd plugin redownload <PluginName>` | Bypasses the version checker and forces a fresh download of the latest tracked `.jar` file. |
+| `/upd plugin rollback <PluginName> [FileName]` | Opens an interactive menu of recent backups for that plugin. Click `[RESTORE]` to stage the old jar. |
 
 ---
 
-## 🎮 Geyser Addon Support
+## 🧰 Geyser & Addons Commands
 
-Enable Geyser support in `config.yml` to manage **Geyser**, **Floodgate**, and **MCXboxBroadcast** independently from Modrinth tracking. These are downloaded directly from GeyserMC's build servers and GitHub releases.
+> **Note:** Geyser support must be turned on via `/upd plugin geyser enable` or in the `config.yml`.
 
+| Command | Description |
+|---|---|
+| `/upd plugin geyser list` | Opens the Geyser management hub. View missing addons, toggle tracking, and manually update individual jars. |
+| `/upd plugin geyser download all` | Automatically downloads any missing Geyser, Floodgate, or MCXboxBroadcast jars to their correct folders. |
+| `/upd plugin geyser update all` | Force-downloads the absolute latest versions of all enabled Geyser addons. |
+
+---
+
+## ⚙️ Configuration Setup
+
+You barely have to configure anything!
+
+1. Place the `PluginUpdater-WB.jar` in your `plugins/` folder.
+2. Start the server.
+3. Open `plugins/PluginUpdater-WB/config.yml`.
+4. The plugin has automatically added every plugin on your server to the config under `# Scanned Plugins #`.
+5. By default, it assumes scanned plugins are on Modrinth.
+6. If a plugin is on GitHub, change `type` to `GITHUB` and paste the `github-repo`, such as `EssentialsX/Essentials`.
+7. Type `/upd reload` in-game.
+
+---
+
+## Example Config Block
+
+```yaml
+# ========================================== #
+#            PluginUpdater-WB                #
+# ========================================== #
+
+# The Minecraft version this server is running. Used to query correct plugin updates.
+# If left blank or missing, the plugin will attempt to auto-detect it.
+minecraft-version: 26.1.2
+
+# List of usernames allowed to use the commands even if they do not have OP or the pluginupdater.admin permission.
+allowed-players:
+- MrMaximoo
+
+# Overrides the loader type sent to Modrinth.
+# Defaults to "paper". Can be set to "auto" to detect if you are running paper/spigot/etc.
+# Valid options: "auto", "paper", "purpur", "folia", "spigot", "bukkit"
+server-type-override: paper
+
+# ========================================== #
+#              Geyser Addons                 #
+# ========================================== #
+# Manages direct downloads for Geyser, Floodgate, and MCXboxBroadcast.
+# Turn enabled to 'true' to manage them via '/upd plugin geyser'
+geyser-addons:
+  enabled: true
+  Geyser: true
+  Floodgate: true
+  MCXboxBroadcast: true
+
+# Below is where the plugin stores configuration for individual updates.
+# The plugin will automatically populate this section on startup based on the plugins currently loaded on your server.
+plugins:
+  
+  # Example of a Modrinth plugin
+  WorldEdit-Example:
+    enabled: false
+    type: MODRINTH
+    project-id: worldedit
+    allowed-release-types:
+    - release
+    current-version: 7.2.15
+  
+  # Example of a GitHub plugin
+  Essentials-Example:
+    enabled: false
+    type: GITHUB
+    github-repo: EssentialsX/Essentials
+    allowed-release-types:
+    - release
+    current-version: 2.20.1
+  
+  # Example of a Custom URL (Bypasses checking logic, will simply download the jar when '/upd run CustomPlugin' is used)
+  CustomPlugin-Example:
+    enabled: false
+    type: CUSTOM
+    custom-url: https://example.com/downloads/CustomPlugin-latest.jar
+    current-version: 1.0.0
+    allowed-release-types:
+    - release
+  
+  # ========================================== #
+  #              Scanned Plugins               #
+  # ========================================== #
 ```
-/upd plugin geyser              → Opens the Geyser management panel
-/upd plugin geyser download all → Download any missing addon jars
-/upd plugin geyser update all   → Force-update all addon jars
-```
 
 ---
 
-## 📁 File Structure
+## ⚠️ Requirements
 
-```
-plugins/
-├── PluginUpdater-WB/
-│   ├── config.yml          ← Main config (auto-managed)
-│   └── backups/            ← Previous plugin versions (max 2 per plugin)
-└── update/                 ← Staged updates (applied on next restart)
-```
+- Java 17 or higher
+- PaperMC, or forks like Purpur and Folia, version 1.20+
 
----
-
-## 🤝 Contributing
-
-Pull requests and issues are welcome! If a plugin isn't being detected correctly, check that the `project-id` (Modrinth) or `github-repo` field in config matches the correct identifier.
-
----
-
-## 📄 License
-
-This project is open source. See [LICENSE](LICENSE) for details.
+> **Note:** This plugin utilizes Paper's native Kyori Adventure API and will not work on legacy Spigot.
