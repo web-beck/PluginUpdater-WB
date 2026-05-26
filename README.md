@@ -1,214 +1,213 @@
 # 🔄 PluginUpdater-WB
 
-PluginUpdater-WB is a next-generation plugin manager designed specifically for modern Paper servers. It completely automates the process of checking, tracking, downloading, and backing up your server's plugins.
-
-Built with native `java.net.http.HttpClient` and `CompletableFuture`, it operates 100% asynchronously. Your main server thread will never freeze or lag, no matter how many plugins you are checking or downloading.
-
----
-
-## ✨ Key Features
-
-### ⚡ Fully Asynchronous
-
-Zero impact on server performance. All HTTP requests, API parsing, and file downloading happen in the background.
-
-### 🧠 Smart Config Syncing & Auto-Cleanup
-
-Drop it into your server and restart. The plugin will automatically detect every installed plugin and populate the `config.yml` for you. If you delete a plugin `.jar`, it automatically cleans it from the config!
-
-### 🔄 Multi-Platform Support
-
-Native API integration with Modrinth and GitHub Releases. Also supports raw Custom URLs for direct downloads.
-
-### 🖥️ Server-Type Awareness
-
-Accurately downloads the correct `.jar` for your specific server loader:
-
-- Paper
-- Spigot
-- Purpur
-- Folia
-- Bukkit
-
-### 🧰 Dedicated Geyser Manager
-
-Native, built-in management for updating and tracking:
-
-- Geyser-Spigot
-- Floodgate
-- MCXboxBroadcast
-
-The auto-scanner smartly ignores these so you can manage them in their own dedicated interactive hub!
-
-### 🛡️ Automated Backups & Rollbacks
-
-Before downloading an update, the plugin automatically copies your current `.jar` into a `backups/` folder, keeping only the 2 most recent backups to save space.
-
-Revert updates instantly with:
-
-`/upd plugin rollback`
-
-### 🎛️ Granular Tracking
-
-By default, the plugin safely tracks only `Release` builds.
-
-Use the interactive menu to track the following channels on a per-plugin basis or globally:
-
-- Alpha
-- Beta
-- Release
-- All
-
-### 🖱️ Interactive Chat UI
-
-Built with Kyori Adventure! Almost every command features rich, clickable buttons and hover-text for a seamless admin experience.
+> **Automatic plugin update management for Paper/Spigot Minecraft servers.**
+> Detects, downloads, and stages updates for all your plugins — supporting Modrinth, Hangar, GitHub Releases, and SpigotMC — with zero manual intervention.
 
 ---
 
-## 🛠️ Commands
+## ✨ Features
 
-**Alias:** `/updater` or `/upd`
-
-**Permission:** `pluginupdater.admin`
-
-Defaults to OP. You can also whitelist specific usernames in the `config.yml`.
-
----
-
-## 🟢 Core Commands
-
-| Command | Description |
-|---|---|
-| `/upd help` | Shows the interactive help menu. |
-| `/upd check` | Manually triggers the async update checker. Admins get notified automatically on join if updates are found. |
-| `/upd run [PluginName]` | Downloads all pending updates to the `update/` folder, applied on next restart. Provide a plugin name to only update that specific plugin. |
-| `/upd reload` | Reloads the `config.yml` and synchronizes the list of loaded plugins. |
+- **Auto-detection** — Scans loaded plugins on startup and populates the config automatically
+- **Multi-source support** — Modrinth, Hangar, GitHub Releases, SpigotMC, or custom download URLs
+- **Smart version matching** — Strips build metadata, platform suffixes, and tag prefixes before comparing
+- **Release channel control** — Track `release`, `beta`, `alpha`, or `all` per plugin or globally
+- **Automatic backups** — Backs up the current jar before every update (keeps the 2 most recent)
+- **Rollback system** — Browse and restore backups directly from in-game clickable menus
+- **Geyser addon manager** — Built-in support for downloading/updating Geyser, Floodgate, and MCXboxBroadcast
+- **Modrinth ID resolver** — Auto-resolves precise Modrinth project IDs on first scan
+- **Per-plugin server type** — Set `paper`, `spigot`, `folia`, `purpur`, or `auto` globally or per-plugin
+- **Interactive chat UI** — Clickable buttons for updating, toggling, rolling back, and tracking channels
+- **Admin join notifications** — Alerts permitted players on login when updates are pending
+- **Async everything** — All network calls and downloads run off the main thread
 
 ---
 
-## 📋 List Commands
+## 📋 Requirements
 
-| Command | Description |
-|---|---|
-| `/upd list` | Shows a clean list of only the plugins that currently have pending updates. Includes a clickable `[CLICK TO UPDATE]` button. |
-| `/upd list all` | Displays the status of every tracked plugin, including its source, server type, and current version. |
-| `/upd list versions` | Bypasses your channel filters, like release-only, to fetch the absolute newest physical releases available on the APIs. |
-| `/upd list enabled` | Shows all currently enabled plugins with a clickable `[DISABLE]` button. |
-| `/upd list disabled` | Shows all currently disabled plugins with a clickable `[ENABLE]` button. |
+- **Java 11+**
+- **Paper or Spigot** 1.19+ (uses Adventure API natively)
+- The server `update` folder must be writable (standard Bukkit behavior)
 
 ---
 
-## 🔧 Plugin Management Commands
+## ⚙️ Installation
 
-| Command | Description |
-|---|---|
-| `/upd plugin info <PluginName>` | Displays an interactive menu showing the current version, downloaded server loader type, tracked channels, and the latest versions across all channels. |
-| `/upd plugin track <PluginName\|all>` | Opens an interactive menu to adjust tracking channels and server-loader overrides for a plugin. You can also supply arguments directly, such as `/upd plugin track all beta`. |
-| `/upd plugin track server <type>` | Sets the global server-type override. Options include `auto`, `paper`, `spigot`, `purpur`, and `folia`. |
-| `/upd plugin redownload <PluginName>` | Bypasses the version checker and forces a fresh download of the latest tracked `.jar` file. |
-| `/upd plugin rollback <PluginName> [FileName]` | Opens an interactive menu of recent backups for that plugin. Click `[RESTORE]` to stage the old jar. |
+1. Drop `PluginUpdater-WB.jar` into your `plugins/` folder.
+2. Start or restart your server.
+3. The plugin will auto-generate `config.yml` and scan all loaded plugins.
+4. Review `plugins/PluginUpdater-WB/config.yml` and adjust any project IDs that need fixing.
+5. Run `/upd check` to perform your first update scan.
 
 ---
 
-## 🧰 Geyser & Addons Commands
-
-> **Note:** Geyser support must be turned on via `/upd plugin geyser enable` or in the `config.yml`.
-
-| Command | Description |
-|---|---|
-| `/upd plugin geyser list` | Opens the Geyser management hub. View missing addons, toggle tracking, and manually update individual jars. |
-| `/upd plugin geyser download all` | Automatically downloads any missing Geyser, Floodgate, or MCXboxBroadcast jars to their correct folders. |
-| `/upd plugin geyser update all` | Force-downloads the absolute latest versions of all enabled Geyser addons. |
-
----
-
-## ⚙️ Configuration Setup
-
-You barely have to configure anything!
-
-1. Place the `PluginUpdater-WB.jar` in your `plugins/` folder.
-2. Start the server.
-3. Open `plugins/PluginUpdater-WB/config.yml`.
-4. The plugin has automatically added every plugin on your server to the config under `# Scanned Plugins #`.
-5. By default, it assumes scanned plugins are on Modrinth.
-6. If a plugin is on GitHub, change `type` to `GITHUB` and paste the `github-repo`, such as `EssentialsX/Essentials`.
-7. Type `/upd reload` in-game.
-
----
-
-## Example Config Block
+## 🔧 Configuration
 
 ```yaml
-# ========================================== #
-#            PluginUpdater-WB                #
-# ========================================== #
+# Your server's Minecraft version (auto-detected if not set)
+minecraft-version: "26.1.2"
 
-# The Minecraft version this server is running. Used to query correct plugin updates.
-# If left blank or missing, the plugin will attempt to auto-detect it.
-minecraft-version: 26.1.2
-
-# List of usernames allowed to use the commands even if they do not have OP or the pluginupdater.admin permission.
-allowed-players:
-- Username1
-- Username2
-
-# Overrides the loader type sent to Modrinth.
-# Defaults to "paper". Can be set to "auto" to detect if you are running paper/spigot/etc.
-# Valid options: "auto", "paper", "purpur", "folia", "spigot", "bukkit"
+# Default server type for Modrinth/Hangar loader filtering
+# Options: auto, paper, spigot, folia, purpur
 server-type-override: paper
 
-# ========================================== #
-#              Geyser Addons                 #
-# ========================================== #
-# Manages direct downloads for Geyser, Floodgate, and MCXboxBroadcast.
-# Turn enabled to 'true' to manage them via '/upd plugin geyser'
+# Players (by name) allowed to use the updater in addition to ops
+allowed-players:
+  - AdminName
+
+# Geyser addon management (Geyser, Floodgate, MCXboxBroadcast)
 geyser-addons:
-  enabled: true
+  enabled: false
   Geyser: true
   Floodgate: true
   MCXboxBroadcast: true
 
 # Below is where the plugin stores configuration for individual updates.
-# The plugin will automatically populate this section on startup based on the plugins currently loaded on your server.
+# Auto-populated on startup based on currently loaded plugins.
 plugins:
-  
-  # Example of a Modrinth plugin
-  WorldEdit-Example:
-    enabled: false
+
+  # Example – Modrinth plugin
+  Modrinth-Example:
+    enabled: true
     type: MODRINTH
     project-id: worldedit
     allowed-release-types:
-    - release
-    current-version: 7.2.15
-  
-  # Example of a GitHub plugin
-  Essentials-Example:
-    enabled: false
+      - release
+    current-version: 7.3.0
+
+  # Example – GitHub Releases plugin
+  GitHub-Example:
+    enabled: true
     type: GITHUB
-    github-repo: EssentialsX/Essentials
+    github-repo: AuthorName/RepoName
     allowed-release-types:
-    - release
-    current-version: 2.20.1
-  
-  # Example of a Custom URL (Bypasses checking logic, will simply download the jar when '/upd run CustomPlugin' is used)
-  CustomPlugin-Example:
-    enabled: false
-    type: CUSTOM
-    custom-url: https://example.com/downloads/CustomPlugin-latest.jar
+      - release
     current-version: 1.0.0
+
+  # Example – Hangar plugin
+  HangarPlugin-Example:
+    enabled: true
+    type: HANGAR
+    project-id: AuthorName/ProjectName
     allowed-release-types:
-    - release
-  
-  # ========================================== #
-  #              Scanned Plugins               #
-  # ========================================== #
+      - release
+    current-version: 1.0.0
+
+  # Example – SpigotMC plugin
+  SpigotPlugin-Example:
+    enabled: true
+    type: SPIGOT
+    project-id: "12345"
+    current-version: 1.0.0
+
+  # Example – Custom direct-download URL
+  CustomPlugin-Example:
+    enabled: true
+    type: CUSTOM
+    custom-url: https://example.com/myplugin-latest.jar
+    current-version: 1.0.0
+```
+
+### Plugin `type` values
+
+| Type | Description |
+|---|---|
+| `MODRINTH` | Fetches from the Modrinth API. Uses `project-id` (slug or 8-char ID). |
+| `GITHUB` | Fetches from GitHub Releases. Uses `github-repo` (`Author/Repo`). |
+| `HANGAR` | Fetches from Hangar (PaperMC). Uses `project-id` (`Author/Slug`). |
+| `SPIGOT` | Fetches from SpigotMC via Spiget. Uses the numeric resource `project-id`. |
+| `CUSTOM` | Downloads directly from `custom-url`. Version checking is bypassed. |
+
+---
+
+## 🛠️ Commands
+
+All commands are available as both `/updater` and `/upd`.
+
+| Command | Description |
+|---|---|
+| `/upd help` | Shows the help menu |
+| `/upd check` | Checks all enabled plugins for updates |
+| `/upd run` | Downloads and stages all pending updates |
+| `/upd run <plugin>` | Downloads and stages the update for a specific plugin |
+| `/upd reload` | Reloads config and re-syncs the plugin list |
+| `/upd list` | Lists all plugins with pending updates |
+| `/upd list all` | Lists all enabled plugins with their update status |
+| `/upd list versions` | Lists all plugins with their latest available version (bypasses channel filters) |
+| `/upd list enabled` | Lists all currently enabled (tracked) plugins |
+| `/upd list disabled` | Lists all currently disabled (untracked) plugins |
+| `/upd plugin info <plugin>` | Shows version info across all channels for a plugin |
+| `/upd plugin redownload <plugin>` | Force re-downloads the latest version of a plugin |
+| `/upd plugin rollback <plugin>` | Opens the backup restoration menu for a plugin |
+| `/upd plugin rollback <plugin> <file>` | Restores a specific backup file |
+| `/upd plugin track <plugin\|all> <release\|beta\|alpha\|all>` | Sets the release channel for a plugin |
+| `/upd plugin track server <type>` | Sets the global server type override |
+| `/upd plugin track <plugin> server <type>` | Sets a per-plugin server type override |
+| `/upd plugin id <plugin>` | Auto-resolves and locks the Modrinth project ID |
+| `/upd plugin id <plugin> <Modrinth\|Hangar\|Spigot> <projectId>` | Manually sets the source and project ID |
+| `/upd plugin geyser` | Opens the Geyser addon management menu |
+| `/upd plugin geyser enable\|disable` | Enables or disables Geyser addon management |
+| `/upd plugin geyser download <all\|Geyser\|Floodgate\|MCXboxBroadcast>` | Downloads missing Geyser addon jars |
+| `/upd plugin geyser update <all\|Geyser\|Floodgate\|MCXboxBroadcast>` | Force-updates Geyser addon jars |
+
+---
+
+## 🔑 Permissions
+
+| Permission | Description |
+|---|---|
+| `pluginupdater.admin` | Full access to all commands |
+| Server op | Automatically granted full access |
+| `allowed-players` list | Named players in config also receive full access |
+
+---
+
+## 🔁 How Updates Work
+
+1. On startup (1 tick delayed), the plugin scans all loaded plugins and syncs `config.yml`.
+2. An async update check runs against each enabled plugin's configured source.
+3. Versions are compared after stripping platform tags (`-paper`, `-spigot`, etc.) and build metadata (`+build.123`).
+4. Plugins with a newer version available are stored in memory as **pending updates**.
+5. Running `/upd run` (or clicking `[CLICK TO UPDATE]` in chat) will:
+   - Back up the currently running jar to `plugins/PluginUpdater-WB/backups/`
+   - Download the new jar into the server's `plugins/update/` folder
+   - Clean up old backups, keeping only the 2 most recent per plugin
+6. The update takes effect on the **next server restart** (standard Bukkit update folder behavior).
+
+---
+
+## 💾 Geyser Addon Support
+
+When enabled, PluginUpdater-WB can download and update **Geyser**, **Floodgate**, and **MCXboxBroadcast** independently of the standard plugin tracking system. This is useful because these projects use a custom build server rather than Modrinth or GitHub Releases.
+
+- **Geyser** and **Floodgate** download from `download.geysermc.org`
+- **MCXboxBroadcast** downloads from its GitHub Releases page
+- MCXboxBroadcast is placed in `plugins/Geyser-Spigot/extensions/` automatically
+
+Enable via: `/upd plugin geyser enable`
+
+---
+
+## 📁 File Structure
+
+```
+plugins/
+├── PluginUpdater-WB.jar
+├── PluginUpdater-WB/
+│   ├── config.yml          ← Auto-managed plugin configuration
+│   └── backups/            ← Jar backups before each update
+│       └── PluginName-1.0.0.jar
+└── update/                 ← Staged jars (applied on restart)
+    └── PluginName-1.1.0.jar
 ```
 
 ---
 
-## ⚠️ Requirements
+## 🤝 Contributing
 
-- Java 17 or higher
-- PaperMC, or forks like Purpur and Folia, version 1.20+
+Pull requests and issue reports are welcome! If a plugin's project ID isn't being resolved correctly, use `/upd plugin id <plugin>` to trigger a manual Modrinth search, or set it explicitly with `/upd plugin id <plugin> Modrinth <id>`.
 
-> **Note:** This plugin utilizes Paper's native Kyori Adventure API and will not work on legacy Spigot.
+---
+
+## 📜 License
+
+This project is open source. See `LICENSE` for details.
