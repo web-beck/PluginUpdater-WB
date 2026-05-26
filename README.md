@@ -149,7 +149,8 @@ minecraft-version: 26.1.2
 
 # List of usernames allowed to use the commands even if they do not have OP or the pluginupdater.admin permission.
 allowed-players:
-- MrMaximoo
+- Username1
+- Username2
 
 # Overrides the loader type sent to Modrinth.
 # Defaults to "paper". Can be set to "auto" to detect if you are running paper/spigot/etc.
