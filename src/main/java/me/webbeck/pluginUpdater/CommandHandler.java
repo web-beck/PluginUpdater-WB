@@ -55,6 +55,9 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
             case "help":
                 showHelp(sender);
                 break;
+            case "-v":
+                plugin.sendMsg(sender, ChatColor.AQUA + "PluginUpdater-WB version " + plugin.getDescription().getVersion());
+                break;
             case "check":
                 updateChecker.runUpdateCheck(sender, false, null);
                 break;
@@ -368,6 +371,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
     private void showHelp(CommandSender sender) {
         sender.sendMessage(Component.text("=== PluginUpdater-WB Help ===", NamedTextColor.GOLD));
         sendHelpLine(sender, "/upd help", "Shows this help menu.");
+        sendHelpLine(sender, "/upd -v", "Displays the PluginUpdater version.");
         sendHelpLine(sender, "/upd check", "Checks all plugins for updates asynchronously.");
         sendHelpLine(sender, "/upd run [plugin]", "Downloads and stages pending updates.");
         sendHelpLine(sender, "/upd reload", "Reloads config and synchronizes plugins.");

@@ -1,5 +1,5 @@
 name: PluginUpdater-WB
-version: 1.0.0
+version: 26.1.2-1.0.2-dev1
 main: me.webbeck.pluginUpdater.PluginUpdater
 api-version: "26.1"
 author: WebBeck
@@ -8,7 +8,7 @@ description: Highly advanced, fully asynchronous plugin manager and updater for 
 commands:
   updater:
     description: Main command for PluginUpdater-WB
-    usage: /<command> <help|check|run|list|reload|plugin>
+    usage: /<command> <help|-v|check|run|list|reload|plugin>
     aliases: [upd]
 
 permissions:
