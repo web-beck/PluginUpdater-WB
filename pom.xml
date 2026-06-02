@@ -6,7 +6,7 @@
 
     <groupId>me.webbeck.pluginupdater</groupId>
     <artifactId>PluginUpdater-WB</artifactId>
-    <version>26.1.2-1.0.2-dev1</version>
+    <version>26.1.2-1.0.2-dev2</version>
     <packaging>jar</packaging>
 
     <name>PluginUpdater-WB</name>

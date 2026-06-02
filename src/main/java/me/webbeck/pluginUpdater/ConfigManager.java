@@ -434,7 +434,6 @@ public class ConfigManager {
                         return hit.get("project_id").getAsString();
                     }
                 }
-                return hits.get(0).getAsJsonObject().get("project_id").getAsString();
             }
         }
         return null;
