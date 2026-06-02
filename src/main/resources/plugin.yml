@@ -1,0 +1,17 @@
+name: PluginUpdater-WB
+version: 1.0.0
+main: me.webbeck.pluginUpdater.PluginUpdater
+api-version: "26.1"
+author: WebBeck
+description: Highly advanced, fully asynchronous plugin manager and updater for Paper.
+
+commands:
+  updater:
+    description: Main command for PluginUpdater-WB
+    usage: /<command> <help|check|run|list|reload|plugin>
+    aliases: [upd]
+
+permissions:
+  pluginupdater.admin:
+    description: Allows full access to the updater commands.
+    default: op

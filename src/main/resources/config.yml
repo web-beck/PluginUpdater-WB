@@ -1,0 +1,78 @@
+# ========================================== #
+#            PluginUpdater-WB                #
+# ========================================== #
+
+# The Minecraft version this server is running. Used to query correct plugin updates.
+# If left blank or missing, the plugin will attempt to auto-detect it.
+minecraft-version: '26.1.2'
+
+# List of usernames allowed to use the commands even if they do not have OP or the pluginupdater.admin permission.
+allowed-players:
+  - 'YourUsernameHere'
+
+# Overrides the loader type sent to Modrinth.
+# Defaults to "paper". Can be set to "auto" to detect if you are running paper/spigot/etc.
+# Valid options: "auto", "paper", "purpur", "folia", "spigot", "bukkit"
+server-type-override: 'paper'
+
+# ========================================== #
+#              Geyser Addons                 #
+# ========================================== #
+# Manages direct downloads for Geyser, Floodgate, and MCXboxBroadcast.
+# Turn enabled to 'true' to manage them via '/upd plugin geyser'
+geyser-addons:
+  enabled: false
+  Geyser: true
+  Floodgate: true
+  MCXboxBroadcast: true
+
+# Below is where the plugin stores configuration for individual updates.
+# The plugin will automatically populate this section on startup based on the plugins currently loaded on your server.
+plugins:
+
+  # Example of a Modrinth plugin
+  Modrinth-Example:
+    enabled: false
+    type: MODRINTH
+    project-id: worldedit
+    allowed-release-types:
+      - release
+    current-version: 7.2.15
+
+  # Example of a GitHub plugin
+  GitHub-Example:
+    enabled: false
+    type: GITHUB
+    github-repo: EssentialsX/Essentials
+    allowed-release-types:
+      - release
+    current-version: 2.20.1
+
+  # Example of a Hangar plugin
+  HangarPlugin-Example:
+    enabled: false
+    type: HANGAR
+    project-id: ViaVersion
+    allowed-release-types:
+      - release
+    current-version: 5.0.0
+
+  # Example of a Spigot plugin
+  SpigotPlugin-Example:
+    enabled: false
+    type: SPIGOT
+    project-id: '19254' # Project ID is the numeric ID in the Spigot URL
+    allowed-release-types:
+      - release
+    current-version: 1.0.0
+
+  # Example of a Custom URL (Bypasses checking logic, will simply download the jar when '/upd run CustomPlugin' is used)
+  CustomPlugin-Example:
+    enabled: false
+    type: CUSTOM
+    custom-url: 'https://example.com/downloads/CustomPlugin-latest.jar'
+    current-version: 1.0.0
+
+  # ========================================== #
+  #              Scanned Plugins               #
+  # ========================================== #

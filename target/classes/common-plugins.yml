@@ -1,0 +1,55 @@
+# Common plugin examples for PluginUpdater-WB
+# Copy the entries you want into config.yml or use them as templates.
+
+# ------------------------------------------
+# Modrinth plugin example
+# ------------------------------------------
+Modrinth-Example:
+  enabled: false
+  type: MODRINTH
+  project-id: example-modrinth-id
+  allowed-release-types:
+    - release
+  current-version: 1.0.0
+
+# ------------------------------------------
+# GitHub plugin example
+# ------------------------------------------
+GitHub-Example:
+  enabled: false
+  type: GITHUB
+  github-repo: owner/repository
+  allowed-release-types:
+    - release
+  current-version: 1.0.0
+
+# ------------------------------------------
+# Hangar plugin example
+# ------------------------------------------
+Hangar-Example:
+  enabled: false
+  type: HANGAR
+  project-id: example-hangar-id
+  allowed-release-types:
+    - release
+  current-version: 1.0.0
+
+# ------------------------------------------
+# Spigot plugin example
+# ------------------------------------------
+Spigot-Example:
+  enabled: false
+  type: SPIGOT
+  project-id: '12345'
+  allowed-release-types:
+    - release
+  current-version: 1.0.0
+
+# ------------------------------------------
+# Custom URL plugin example
+# ------------------------------------------
+CustomPlugin-Example:
+  enabled: false
+  type: CUSTOM
+  custom-url: 'https://example.com/downloads/CustomPlugin-latest.jar'
+  current-version: 1.0.0
