@@ -7,6 +7,7 @@ import org.bukkit.plugin.Plugin;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -14,6 +15,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class UpdateDownloader {
     private final PluginUpdater plugin;
@@ -64,13 +67,15 @@ public class UpdateDownloader {
                         }
                     }
 
-                    var req = java.net.http.HttpRequest.newBuilder().uri(java.net.URI.create(info.downloadUrl)).build();
                     File targetFile = new File(updateFolder, info.fileName);
-                    plugin.getHttpClient().send(req, java.net.http.HttpResponse.BodyHandlers.ofFile(targetFile.toPath(),
-                            StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE));
+                    if (targetFile.exists()) {
+                        Path backupPath = new File(backupFolder, info.pluginName + "-existing.jar").toPath();
+                        Files.copy(targetFile.toPath(), backupPath, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                    File downloadedFile = downloadFileToDirectory(info.downloadUrl, updateFolder, info.fileName);
 
                     plugin.getPendingUpdates().remove(info.pluginName.toLowerCase());
-                    plugin.sendMsg(sender, ChatColor.GREEN + "Successfully downloaded update for " + info.pluginName);
+                    plugin.sendMsg(sender, ChatColor.GREEN + "Successfully downloaded update for " + info.pluginName + " as " + downloadedFile.getName());
                 } catch (Exception e) {
                     plugin.sendMsg(sender, ChatColor.RED + "Failed to download " + info.pluginName + ": " + e.getMessage());
                 }
@@ -82,6 +87,134 @@ public class UpdateDownloader {
             plugin.sendMsg(sender, ChatColor.GOLD + "All requested updates downloaded! Restart server to apply.");
             updateChecker.runUpdateCheck(Bukkit.getConsoleSender(), false, null);
         });
+    }
+
+    public void downloadPluginToPluginsFolder(CommandSender sender, String pluginName) {
+        String resolvedName = configManager.resolvePluginName(pluginName);
+        if (resolvedName == null) {
+            plugin.sendMsg(sender, ChatColor.RED + "Plugin '" + pluginName + "' not found in config.");
+            return;
+        }
+
+        var targetSec = plugin.getConfig().getConfigurationSection("plugins." + resolvedName);
+        if (targetSec == null) {
+            plugin.sendMsg(sender, ChatColor.RED + "Plugin '" + resolvedName + "' not found in config.");
+            return;
+        }
+
+        plugin.sendMsg(sender, ChatColor.AQUA + "Downloading " + resolvedName + " into the plugins folder...");
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                String type = targetSec.getString("type", "MODRINTH").toUpperCase();
+                List<String> allowedTypes = targetSec.getStringList("allowed-release-types");
+                if (allowedTypes.isEmpty() || allowedTypes.contains("all") || allowedTypes.contains("ALL")) {
+                    allowedTypes = Arrays.asList("release", "beta", "alpha", "prerelease");
+                }
+
+                String currentVer = targetSec.getString("current-version", "0.0.0");
+                UpdateInfo info = null;
+
+                if (type.equals("MODRINTH")) {
+                    String serverType = configManager.getPluginServerType(resolvedName);
+                    info = updateChecker.checkModrinth(resolvedName, targetSec.getString("project-id"), currentVer, allowedTypes, serverType);
+                } else if (type.equals("GITHUB")) {
+                    info = updateChecker.checkGitHub(resolvedName, targetSec.getString("github-repo"), currentVer, allowedTypes);
+                } else if (type.equals("HANGAR")) {
+                    String serverType = configManager.getPluginServerType(resolvedName);
+                    info = updateChecker.checkHangar(resolvedName, targetSec.getString("project-id"), currentVer, allowedTypes, serverType);
+                } else if (type.equals("SPIGOT")) {
+                    info = updateChecker.checkSpigot(resolvedName, targetSec.getString("project-id"), currentVer);
+                } else if (type.equals("CUSTOM")) {
+                    String customUrl = targetSec.getString("custom-url");
+                    if (customUrl == null || customUrl.isBlank()) {
+                        plugin.sendMsg(sender, ChatColor.RED + "Custom URL is missing for " + resolvedName + ".");
+                        return;
+                    }
+                    String fileName = resolvedName + ".jar";
+                    String path = java.net.URI.create(customUrl).getPath();
+                    if (path != null && path.contains("/")) {
+                        String candidate = path.substring(path.lastIndexOf('/') + 1);
+                        if (candidate.toLowerCase().endsWith(".jar")) {
+                            fileName = candidate;
+                        }
+                    }
+                    info = new UpdateInfo(resolvedName, currentVer, "Custom", customUrl, fileName);
+                }
+
+                if (info == null) {
+                    plugin.sendMsg(sender, ChatColor.RED + "Could not determine a downloadable release for " + resolvedName + ".");
+                    return;
+                }
+
+                File pluginsFolder = plugin.getDataFolder().getParentFile();
+                if (!pluginsFolder.exists()) {
+                    pluginsFolder.mkdirs();
+                }
+
+                File updateFolder = new File(plugin.getDataFolder().getParentFile(), "update");
+                if (!updateFolder.exists()) updateFolder.mkdirs();
+
+                File targetFile = new File(pluginsFolder, info.fileName);
+                File backupFolder = new File(plugin.getDataFolder(), "backups");
+                if (!backupFolder.exists()) backupFolder.mkdirs();
+
+                File downloadedFile;
+                if (targetFile.exists()) {
+                    // If the plugin jar already exists in the plugins folder, stage the new download into the update folder
+                    downloadedFile = downloadFileToDirectory(info.downloadUrl, updateFolder, info.fileName);
+                    plugin.sendMsg(sender, ChatColor.GREEN + "Downloaded " + resolvedName + " to update folder as " + downloadedFile.getName() + ". Restart server to apply.");
+                } else {
+                    // Otherwise download directly to plugins folder
+                    downloadedFile = downloadFileToDirectory(info.downloadUrl, pluginsFolder, info.fileName);
+                    plugin.sendMsg(sender, ChatColor.GREEN + "Downloaded " + resolvedName + " to plugins folder as " + downloadedFile.getName() + ". Restart server to load it.");
+                }
+            } catch (Exception e) {
+                plugin.sendMsg(sender, ChatColor.RED + "Failed to download plugin to plugins folder: " + e.getMessage());
+            }
+        });
+    }
+
+    private File downloadFileToDirectory(String downloadUrl, File directory, String fallbackName) throws Exception {
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
+
+        File tempFile = new File(directory, fallbackName + ".download.tmp");
+        java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                .uri(java.net.URI.create(downloadUrl))
+                .build();
+
+        java.net.http.HttpResponse<Path> response = plugin.getHttpClient().send(request,
+                java.net.http.HttpResponse.BodyHandlers.ofFile(tempFile.toPath(),
+                        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE));
+
+        String actualName = extractFileNameFromResponse(response, fallbackName);
+        File resultFile = new File(directory, actualName);
+        if (!resultFile.toPath().equals(tempFile.toPath())) {
+            Files.move(tempFile.toPath(), resultFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+        return resultFile;
+    }
+
+    private String extractFileNameFromResponse(java.net.http.HttpResponse<?> response, String fallbackName) {
+        var contentDisposition = response.headers().firstValue("Content-Disposition");
+        if (contentDisposition.isPresent()) {
+            Matcher matcher = Pattern.compile("filename\\*?=(?:UTF-8''?)?\"?([^\";]+)\"?").matcher(contentDisposition.get());
+            if (matcher.find()) {
+                String filename = matcher.group(1).trim();
+                if (!filename.isEmpty()) {
+                    return new File(filename).getName();
+                }
+            }
+        }
+
+        String path = response.uri().getPath();
+        if (path != null && path.toLowerCase().endsWith(".jar")) {
+            return new File(path).getName();
+        }
+
+        return fallbackName;
     }
 
     public void performRollback(CommandSender sender, String pluginName, String fileName) {

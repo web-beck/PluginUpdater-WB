@@ -169,6 +169,10 @@ public class UpdateChecker {
         return configManager.getRealModrinthId(pluginName);
     }
 
+    public String getRealSpigotId(String pluginName) throws Exception {
+        return configManager.getRealSpigotId(pluginName);
+    }
+
     UpdateInfo checkModrinth(String pluginName, String projectId, String currentVer, List<String> allowedTypes, String serverType) throws Exception {
         String loadersStr;
         if (serverType.equalsIgnoreCase("auto")) {

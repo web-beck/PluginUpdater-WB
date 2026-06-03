@@ -15,6 +15,11 @@ allowed-players:
 # Valid options: "auto", "paper", "purpur", "folia", "spigot", "bukkit"
 server-type-override: 'paper'
 
+# Global tracking type for all plugins. When set to a specific value, it will
+# enforce that tracking channel for every plugin on next sync. Valid options:
+# "release", "beta", "alpha", "all"
+tracking-type: 'all'
+
 # ========================================== #
 #              Geyser Addons                 #
 # ========================================== #
@@ -31,13 +36,13 @@ geyser-addons:
 plugins:
 
   # Example of a Modrinth plugin
-  Modrinth-Example:
-    enabled: false
+  PluginUpdater-WB:
+    enabled: true
     type: MODRINTH
-    project-id: worldedit
+    project-id: osLrA9oB
     allowed-release-types:
       - release
-    current-version: 7.2.15
+    current-version: 1.0.0
 
   # Example of a GitHub plugin
   GitHub-Example:
