@@ -84,6 +84,7 @@ public class UpdateChecker {
             }
 
             plugin.updateActionBar(sender, "");
+            plugin.setInitialCheckComplete();
 
             if (listMode != null) {
                 displayPluginList(sender, listMode);

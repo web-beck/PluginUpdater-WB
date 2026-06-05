@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PluginUpdater extends JavaPlugin implements Listener {
     private HttpClient httpClient;
     private final Map<String, UpdateInfo> pendingUpdates = new ConcurrentHashMap<>();
+    private volatile boolean initialCheckComplete = false;
 
     // Holds the plugin name awaiting destructive confirmation (e.g. delete)
     private String pendingDeletionPlugin = null;
@@ -126,9 +127,15 @@ public class PluginUpdater extends JavaPlugin implements Listener {
             Bukkit.getScheduler().runTaskLater(this, () -> {
                 if (!pendingUpdates.isEmpty()) {
                     p.sendMessage(LegacyComponentSerializer.legacySection().deserialize(ChatColor.GOLD + "[PluginUpdater] " + ChatColor.YELLOW + "There are " + pendingUpdates.size() + " plugin updates pending! Use /upd list"));
+                } else if (initialCheckComplete) {
+                    p.sendMessage(LegacyComponentSerializer.legacySection().deserialize(ChatColor.GOLD + "[PluginUpdater] " + ChatColor.GREEN + "All plugins are up to date!"));
                 }
             }, 40L);
         }
+    }
+
+    public void setInitialCheckComplete() {
+        this.initialCheckComplete = true;
     }
 
     public String getPendingDeletionPlugin() {
