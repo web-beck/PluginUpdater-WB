@@ -566,7 +566,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
         List<String> currentTracked = targetSec.getStringList("allowed-release-types");
         String serverFileType = configManager.getPluginServerType(resolvedName);
 
-        plugin.sendMsg(sender, ChatColor.AQUA + "Fetching version info for " + resolvedName + " across all channels...");
+        plugin.sendMsg(sender, ChatColor.AQUA + "Fetching version info for " + resolvedName + "...");
 
         Runnable task = () -> {
             Map<String, String> latestVersions = new java.util.HashMap<>();
@@ -587,81 +587,100 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
 
             Bukkit.getScheduler().runTask(plugin, () -> {
                 boolean allTracked = currentTracked.contains("all") || currentTracked.contains("ALL") || currentTracked.size() >= 3;
+                String channelDisplay = allTracked ? "all" : String.join(", ", currentTracked);
 
-                Component header = Component.text("=== [ ", NamedTextColor.GOLD)
-                        .append(Component.text(resolvedName, NamedTextColor.AQUA))
-                        .append(Component.text(" ] ===", NamedTextColor.GOLD));
-
-                Component serverTypeComp = Component.text("Downloaded Server Type: ", NamedTextColor.GRAY)
-                        .append(Component.text(configManager.getPrettyServerType(serverFileType), NamedTextColor.YELLOW));
-
-                Component curVerComp = Component.text("Current Version: ", NamedTextColor.GRAY)
-                        .append(Component.text(currentVer, NamedTextColor.WHITE));
-
-                Component trackedComp = Component.text("Tracked Channels: ", NamedTextColor.GRAY)
-                        .append(Component.text(String.join(", ", currentTracked), NamedTextColor.YELLOW));
-
-                sender.sendMessage(header);
-                sender.sendMessage(serverTypeComp);
-                sender.sendMessage(curVerComp);
-                sender.sendMessage(trackedComp);
-                // Show source ID / repo for the plugin
-                String idDisplay = "<none>";
+                String idDisplay;
                 if (type.equals("MODRINTH") || type.equals("HANGAR") || type.equals("SPIGOT")) {
                     idDisplay = targetSec.getString("project-id", "<none>");
                 } else if (type.equals("GITHUB")) {
                     idDisplay = targetSec.getString("github-repo", "<none>");
-                } else if (type.equals("CUSTOM")) {
-                    idDisplay = targetSec.getString("custom-url", "<none>");
+                } else {
+                    idDisplay = "<none>";
                 }
 
-                Component idComp = Component.text("Source: ", NamedTextColor.GRAY)
-                        .append(Component.text(type, NamedTextColor.YELLOW))
-                        .append(Component.text(" - ID/Repo: ", NamedTextColor.GRAY))
-                        .append(Component.text(idDisplay, NamedTextColor.WHITE));
-                sender.sendMessage(idComp);
+                // ── Header ──────────────────────────────────────────────────
+                sender.sendMessage(Component.text("━━━[ ", NamedTextColor.GOLD)
+                        .append(Component.text(resolvedName, NamedTextColor.AQUA))
+                        .append(Component.text(" ]━━━", NamedTextColor.GOLD)));
 
-                Component sourceButtons = Component.text("Change Source: ", NamedTextColor.GRAY);
-                List<String> sourceTypes = Arrays.asList("MODRINTH", "GITHUB", "HANGAR", "SPIGOT", "CUSTOM");
-                for (String sourceType : sourceTypes) {
+                // ── Version │ Server │ Channel ──────────────────────────────
+                sender.sendMessage(Component.text("Version: ", NamedTextColor.GRAY)
+                        .append(Component.text(currentVer, NamedTextColor.WHITE))
+                        .append(Component.text("  │  ", NamedTextColor.DARK_GRAY))
+                        .append(Component.text("Server: ", NamedTextColor.GRAY))
+                        .append(Component.text(configManager.getPrettyServerType(serverFileType), NamedTextColor.YELLOW))
+                        .append(Component.text("  │  ", NamedTextColor.DARK_GRAY))
+                        .append(Component.text("Channel: ", NamedTextColor.GRAY))
+                        .append(Component.text(channelDisplay, NamedTextColor.YELLOW)));
+
+                // ── Source + Change buttons ──────────────────────────────────
+                sender.sendMessage(Component.text("Source: ", NamedTextColor.GRAY)
+                        .append(Component.text(type, NamedTextColor.YELLOW))
+                        .append(Component.text("  " + idDisplay, NamedTextColor.WHITE)));
+
+                Component sourceButtons = Component.text("  Change: ", NamedTextColor.DARK_GRAY);
+                for (String sourceType : Arrays.asList("MODRINTH", "GITHUB", "HANGAR", "SPIGOT", "CUSTOM")) {
                     boolean isCurrent = sourceType.equalsIgnoreCase(type);
-                    Component btn = Component.text("[" + sourceType + "] ", isCurrent ? NamedTextColor.GREEN : NamedTextColor.YELLOW)
-                            .clickEvent(ClickEvent.suggestCommand("/upd plugin id " + resolvedName + " " + sourceType + " "))
-                            .hoverEvent(HoverEvent.showText(Component.text(sourceType.equals("MODRINTH")
-                                    ? "Click to switch source to Modrinth; then enter the ID or leave blank to auto-resolve."
-                                    : sourceType.equals("CUSTOM")
-                                    ? "Click to switch source to Custom; then enter the full download URL."
-                                    : "Click to switch source to " + sourceType + " and enter the ID/repo.", NamedTextColor.YELLOW)));
-                    sourceButtons = sourceButtons.append(btn);
+                    sourceButtons = sourceButtons.append(
+                            Component.text("[" + sourceType + "] ", isCurrent ? NamedTextColor.GREEN : NamedTextColor.YELLOW)
+                                    .clickEvent(ClickEvent.suggestCommand("/upd plugin id " + resolvedName + " " + sourceType + " "))
+                                    .hoverEvent(HoverEvent.showText(Component.text(
+                                            isCurrent ? "Currently using " + sourceType
+                                                    : "Switch to " + sourceType + " — enter the ID or URL",
+                                            NamedTextColor.YELLOW))));
                 }
                 sender.sendMessage(sourceButtons);
-                sender.sendMessage(Component.text("Latest Available Updates:", NamedTextColor.GRAY));
 
-                String[] channels = {"release", "beta", "alpha"};
-                for (String channel : channels) {
+                // ── Available Versions ───────────────────────────────────────
+                sender.sendMessage(Component.text("─────── ", NamedTextColor.DARK_GRAY)
+                        .append(Component.text("Available Versions", NamedTextColor.GRAY))
+                        .append(Component.text(" ───────", NamedTextColor.DARK_GRAY)));
+
+                for (String channel : new String[]{"release", "beta", "alpha"}) {
                     String ver = latestVersions.get(channel);
-                    String displayChannel = channel.substring(0, 1).toUpperCase() + channel.substring(1);
-                    Component channelLine = Component.text("- " + displayChannel + ": ", NamedTextColor.GRAY);
+                    String label = channel.substring(0, 1).toUpperCase() + channel.substring(1);
+                    boolean isTracked = !allTracked && currentTracked.stream().anyMatch(c -> c.equalsIgnoreCase(channel));
 
+                    Component line = Component.text("  " + label + ": ", NamedTextColor.GRAY);
                     if (ver == null) {
-                        channelLine = channelLine.append(Component.text("None Found", NamedTextColor.DARK_GRAY));
+                        line = line.append(Component.text("None Found", NamedTextColor.DARK_GRAY));
                     } else {
-                        channelLine = channelLine.append(Component.text(ver + " ", NamedTextColor.WHITE));
-                        boolean isTracked = currentTracked.contains(channel) && !allTracked;
-                        Component btn = Component.text(isTracked ? "[TRACKING]" : "[TRACK THIS]", isTracked ? NamedTextColor.GREEN : NamedTextColor.YELLOW)
-                                .clickEvent(ClickEvent.runCommand("/upd plugin track " + resolvedName + " " + channel))
-                                .hoverEvent(HoverEvent.showText(Component.text("Click to ONLY track " + channel + " versions", NamedTextColor.GOLD)));
-                        channelLine = channelLine.append(btn);
+                        line = line.append(Component.text(ver + " ", NamedTextColor.WHITE))
+                                .append(Component.text(isTracked ? "[TRACKING]" : "[TRACK]",
+                                                isTracked ? NamedTextColor.GREEN : NamedTextColor.YELLOW)
+                                        .clickEvent(ClickEvent.runCommand("/upd plugin track " + resolvedName + " " + channel))
+                                        .hoverEvent(HoverEvent.showText(Component.text(
+                                                isTracked ? "Currently tracking " + channel : "Click to track only " + channel,
+                                                NamedTextColor.GOLD))));
                     }
-                    sender.sendMessage(channelLine);
+                    sender.sendMessage(line);
                 }
 
-                Component allBtnLine = Component.text("- All Channels: ", NamedTextColor.GRAY)
-                        .append(Component.text(allTracked ? "[TRACKING ALL]" : "[TRACK ALL]", allTracked ? NamedTextColor.GREEN : NamedTextColor.YELLOW)
-                                .clickEvent(ClickEvent.runCommand("/upd plugin track " + resolvedName + " all"))
-                                .hoverEvent(HoverEvent.showText(Component.text("Click to track release, beta, and alpha", NamedTextColor.GOLD))));
-                sender.sendMessage(allBtnLine);
-                showTrackOptions(sender, resolvedName);
+                // ── Tracking controls ────────────────────────────────────────
+                sender.sendMessage(Component.text("──────────── ", NamedTextColor.DARK_GRAY)
+                        .append(Component.text("Tracking", NamedTextColor.GRAY))
+                        .append(Component.text(" ────────────", NamedTextColor.DARK_GRAY)));
+
+                Component channelLine = Component.text("  Channel: ", NamedTextColor.GRAY);
+                for (String ch : Arrays.asList("release", "beta", "alpha", "all")) {
+                    boolean isSelected = allTracked ? ch.equals("all") : currentTracked.stream().anyMatch(c -> c.equalsIgnoreCase(ch));
+                    channelLine = channelLine.append(
+                            Component.text("[" + ch.toUpperCase() + "] ", isSelected ? NamedTextColor.GREEN : NamedTextColor.YELLOW)
+                                    .clickEvent(ClickEvent.runCommand("/upd plugin track " + resolvedName + " " + ch))
+                                    .hoverEvent(HoverEvent.showText(Component.text("Track " + ch + " versions", NamedTextColor.GOLD))));
+                }
+                sender.sendMessage(channelLine);
+
+                String activeServerType = configManager.getPluginServerType(resolvedName);
+                Component serverLine = Component.text("  Server:  ", NamedTextColor.GRAY);
+                for (String st : Arrays.asList("auto", "paper", "spigot", "folia", "purpur")) {
+                    boolean isSelected = st.equalsIgnoreCase(activeServerType);
+                    serverLine = serverLine.append(
+                            Component.text("[" + st.toUpperCase() + "] ", isSelected ? NamedTextColor.GREEN : NamedTextColor.YELLOW)
+                                    .clickEvent(ClickEvent.runCommand("/upd plugin track " + resolvedName + " server " + st))
+                                    .hoverEvent(HoverEvent.showText(Component.text("Set server type to " + st, NamedTextColor.GOLD))));
+                }
+                sender.sendMessage(serverLine);
             });
         };
         new Thread(task).start();
@@ -676,38 +695,30 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
 
         List<String> currentTracked = configManager.getTrackedChannels(resolvedName);
         boolean allTracked = currentTracked.contains("all") || currentTracked.contains("ALL") || currentTracked.size() >= 3;
+        String label = resolvedName.equalsIgnoreCase("all") ? "ALL PLUGINS" : resolvedName;
 
-        sender.sendMessage(Component.text("=== Tracking Options for " + (resolvedName.equalsIgnoreCase("all") ? "ALL PLUGINS" : resolvedName) + " ===", NamedTextColor.GOLD));
-        sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize(ChatColor.GRAY + "Download versions: "));
+        sender.sendMessage(Component.text("━━━[ ", NamedTextColor.GOLD)
+                .append(Component.text("Tracking: " + label, NamedTextColor.AQUA))
+                .append(Component.text(" ]━━━", NamedTextColor.GOLD)));
 
-        List<String> channels = Arrays.asList("release", "beta", "alpha", "all");
-        Component channelLine = Component.text("Channels: ", NamedTextColor.GRAY);
-        for (String channel : channels) {
-            boolean isSelected;
-            if (allTracked) {
-                isSelected = channel.equalsIgnoreCase("all");
-            } else {
-                isSelected = currentTracked.stream().anyMatch(c -> c.equalsIgnoreCase(channel));
-            }
-
-            NamedTextColor color = isSelected ? NamedTextColor.GREEN : NamedTextColor.YELLOW;
-            channelLine = channelLine.append(Component.text("[" + channel.toUpperCase() + "] ", color)
-                    .clickEvent(ClickEvent.runCommand("/upd plugin track " + resolvedName + " " + channel))
-                    .hoverEvent(HoverEvent.showText(Component.text("Track " + channel + " versions", NamedTextColor.GOLD))));
+        Component channelLine = Component.text("  Channel: ", NamedTextColor.GRAY);
+        for (String channel : Arrays.asList("release", "beta", "alpha", "all")) {
+            boolean isSelected = allTracked ? channel.equals("all") : currentTracked.stream().anyMatch(c -> c.equalsIgnoreCase(channel));
+            channelLine = channelLine.append(
+                    Component.text("[" + channel.toUpperCase() + "] ", isSelected ? NamedTextColor.GREEN : NamedTextColor.YELLOW)
+                            .clickEvent(ClickEvent.runCommand("/upd plugin track " + resolvedName + " " + channel))
+                            .hoverEvent(HoverEvent.showText(Component.text("Track " + channel + " versions", NamedTextColor.GOLD))));
         }
         sender.sendMessage(channelLine);
 
         String activeServerType = resolvedName.equalsIgnoreCase("all") ? configManager.getServerTypeOverride() : configManager.getPluginServerType(resolvedName);
-        String displayServerOverride = configManager.getPrettyServerType(activeServerType);
-        sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize(ChatColor.GRAY + "Server override: " + ChatColor.YELLOW + displayServerOverride));
-
-        List<String> serverTypes = Arrays.asList("auto", "paper", "spigot", "folia", "purpur");
-        Component serverLine = Component.text("Server Type: ", NamedTextColor.GRAY);
-        for (String type : serverTypes) {
-            boolean isServerSelected = type.equalsIgnoreCase(activeServerType);
-            serverLine = serverLine.append(Component.text("[" + type.toUpperCase() + "] ", isServerSelected ? NamedTextColor.GREEN : NamedTextColor.YELLOW)
-                    .clickEvent(ClickEvent.runCommand("/upd plugin track " + resolvedName + " server " + type))
-                    .hoverEvent(HoverEvent.showText(Component.text("Set server type override to " + type, NamedTextColor.GOLD))));
+        Component serverLine = Component.text("  Server:  ", NamedTextColor.GRAY);
+        for (String st : Arrays.asList("auto", "paper", "spigot", "folia", "purpur")) {
+            boolean isSelected = st.equalsIgnoreCase(activeServerType);
+            serverLine = serverLine.append(
+                    Component.text("[" + st.toUpperCase() + "] ", isSelected ? NamedTextColor.GREEN : NamedTextColor.YELLOW)
+                            .clickEvent(ClickEvent.runCommand("/upd plugin track " + resolvedName + " server " + st))
+                            .hoverEvent(HoverEvent.showText(Component.text("Set server type to " + st, NamedTextColor.GOLD))));
         }
         sender.sendMessage(serverLine);
     }
@@ -877,10 +888,10 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
             if (args[0].equalsIgnoreCase("plugin") && (args[1].equalsIgnoreCase("id") || args[1].equalsIgnoreCase("resolve"))) {
                 String source = args[3].toLowerCase();
                 List<String> suggestions = new ArrayList<>();
-                if (source.equals("modrinth") || source.equals("spigot") || source.equals("hangar")) {
-                    suggestions = Arrays.asList("<ID>");
+                if (source.equals("modrinth") || source.equals("hangar") || source.equals("spigot")) {
+                    suggestions = Arrays.asList("<ID>", "<URL>");
                 } else if (source.equals("github")) {
-                    suggestions = Arrays.asList("<owner>/<repo>");
+                    suggestions = Arrays.asList("<owner>/<repo>", "<URL>");
                 } else if (source.equals("custom")) {
                     suggestions = Arrays.asList("<URL>");
                 }

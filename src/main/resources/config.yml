@@ -36,8 +36,8 @@ geyser-addons:
 plugins:
 
   # Example of a Modrinth plugin
-  PluginUpdater-WB:
-    enabled: true
+  Modrinth-Example:
+    enabled: false
     type: MODRINTH
     project-id: osLrA9oB
     allowed-release-types:
@@ -54,13 +54,13 @@ plugins:
     current-version: 2.20.1
 
   # Example of a Hangar plugin
-  HangarPlugin-Example:
-    enabled: false
+  PluginUpdater-WB:
+    enabled: true
     type: HANGAR
-    project-id: ViaVersion
+    project-id: PluginUpdater-WB
     allowed-release-types:
       - release
-    current-version: 5.0.0
+    current-version: 1.0.3
 
   # Example of a Spigot plugin
   SpigotPlugin-Example:

@@ -400,32 +400,69 @@ public class ConfigManager {
 
     public void setPluginIdConfig(CommandSender sender, String pluginName, String source, String projectId) {
         String type = source.toUpperCase(Locale.ROOT);
+        String resolvedId = extractIdFromInput(type, projectId);
         String pluginPath = "plugins." + pluginName;
-        
-        // Always set type first
+
         plugin.getConfig().set(pluginPath + ".type", type);
-        
-        // Clear all ID/repo/URL fields first
         plugin.getConfig().set(pluginPath + ".project-id", null);
         plugin.getConfig().set(pluginPath + ".github-repo", null);
         plugin.getConfig().set(pluginPath + ".custom-url", null);
-        
-        // Then set only the field for this type
+
         if (type.equals("MODRINTH") || type.equals("HANGAR") || type.equals("SPIGOT")) {
-            plugin.getConfig().set(pluginPath + ".project-id", projectId);
+            plugin.getConfig().set(pluginPath + ".project-id", resolvedId);
             saveAndFormatConfig();
-            plugin.sendMsg(sender, ChatColor.GREEN + "Set " + pluginName + " to " + type + " with ID " + projectId + ".");
+            plugin.sendMsg(sender, ChatColor.GREEN + "Set " + pluginName + " to " + type + " with ID " + resolvedId + ".");
         } else if (type.equals("GITHUB")) {
-            plugin.getConfig().set(pluginPath + ".github-repo", projectId);
+            plugin.getConfig().set(pluginPath + ".github-repo", resolvedId);
             saveAndFormatConfig();
-            plugin.sendMsg(sender, ChatColor.GREEN + "Set " + pluginName + " to GitHub with repo " + projectId + ".");
+            plugin.sendMsg(sender, ChatColor.GREEN + "Set " + pluginName + " to GitHub with repo " + resolvedId + ".");
         } else if (type.equals("CUSTOM")) {
-            plugin.getConfig().set(pluginPath + ".custom-url", projectId);
+            plugin.getConfig().set(pluginPath + ".custom-url", resolvedId);
             saveAndFormatConfig();
-            plugin.sendMsg(sender, ChatColor.GREEN + "Set " + pluginName + " to Custom with URL " + projectId + ".");
+            plugin.sendMsg(sender, ChatColor.GREEN + "Set " + pluginName + " to Custom with URL " + resolvedId + ".");
         } else {
             plugin.sendMsg(sender, ChatColor.RED + "Invalid source type. Use Modrinth, Hangar, Spigot, GitHub, or Custom.");
         }
+    }
+
+    private String extractIdFromInput(String type, String input) {
+        if (input == null || !input.contains("://")) return input;
+        try {
+            URI uri = URI.create(input);
+            String host = uri.getHost() != null ? uri.getHost().toLowerCase(Locale.ROOT) : "";
+            String path = uri.getPath() != null ? uri.getPath() : "";
+            List<String> segments = Arrays.stream(path.split("/"))
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+
+            switch (type.toUpperCase(Locale.ROOT)) {
+                case "MODRINTH":
+                    if (host.contains("modrinth.com") && segments.size() >= 2)
+                        return segments.get(1); // /plugin|mod|project/<slug>
+                    break;
+                case "HANGAR":
+                    if (host.contains("hangar.papermc.io") && segments.size() >= 2
+                            && !segments.get(0).equalsIgnoreCase("api"))
+                        return segments.get(1); // /Author/<slug>
+                    break;
+                case "SPIGOT":
+                    if (host.contains("spigotmc.org") && segments.size() >= 2
+                            && segments.get(0).equalsIgnoreCase("resources")) {
+                        String candidate = segments.get(segments.size() - 1);
+                        if (candidate.matches("\\d+")) return candidate;
+                        if (candidate.contains(".")) {
+                            String lastPart = candidate.substring(candidate.lastIndexOf('.') + 1);
+                            if (lastPart.matches("\\d+")) return lastPart;
+                        }
+                    }
+                    break;
+                case "GITHUB":
+                    if (host.contains("github.com") && segments.size() >= 2)
+                        return segments.get(0) + "/" + segments.get(1); // owner/repo
+                    break;
+            }
+        } catch (Exception ignored) {}
+        return input;
     }
 
     public String addPluginFromUrl(CommandSender sender, String url) {
@@ -444,7 +481,9 @@ public class ConfigManager {
 
             if (host.contains("modrinth.com")) {
                 type = "MODRINTH";
-                if (segments.size() >= 2 && (segments.get(0).equalsIgnoreCase("project") || segments.get(0).equalsIgnoreCase("plugin"))) {
+                if (segments.size() >= 2 && (segments.get(0).equalsIgnoreCase("project")
+                        || segments.get(0).equalsIgnoreCase("plugin")
+                        || segments.get(0).equalsIgnoreCase("mod"))) {
                     sourceValue = segments.get(1);
                 }
             } else if (host.contains("spigotmc.org")) {
@@ -466,9 +505,10 @@ public class ConfigManager {
                 if (segments.size() >= 2) {
                     sourceValue = segments.get(0) + "/" + segments.get(1);
                 }
-            } else if (host.contains("papermc.io") || host.contains("hangar.papermc.io")) {
+            } else if (host.contains("hangar.papermc.io")) {
                 type = "HANGAR";
-                if (segments.size() >= 2 && segments.get(0).equalsIgnoreCase("projects")) {
+                if (segments.size() >= 2 && !segments.get(0).equalsIgnoreCase("api")) {
+                    // Web URL: hangar.papermc.io/Author/Slug → use Slug as project ID
                     sourceValue = segments.get(1);
                 }
             } else {
