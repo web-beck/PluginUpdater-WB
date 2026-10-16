@@ -6,9 +6,9 @@ pom.xml.releaseBackup
 pom.xml.versionsBackup
 release.properties
 
-# Stray local Maven repository (created by a mistyped -Dmaven.repo.local)
-/UsersbeckM.m2repository/
+# Stray local Maven repository
 /.m2/
+build.md
 
 # IntelliJ IDEA (pom.xml is the source of truth for the project setup)
 .idea/
