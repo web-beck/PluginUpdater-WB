@@ -1,12 +1,40 @@
-# Default ignored files
-/shelf/
-/workspace.xml
-# Editor-based HTTP Client requests
-/httpRequests/
-# Ignored default folder with query files
-/queries/
-# Datasource local storage ignored files
-/dataSources/
-/dataSources.local.xml
 # Maven build output
 /target/
+dependency-reduced-pom.xml
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+
+# Stray local Maven repository (created by a mistyped -Dmaven.repo.local)
+/UsersbeckM.m2repository/
+/.m2/
+
+# IntelliJ IDEA (pom.xml is the source of truth for the project setup)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# VS Code / Eclipse
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+bin/
+
+# Local test server (if you run Paper inside the repo)
+/run/
+/server/
+
+# Logs and crash dumps
+*.log
+hs_err_pid*
+replay_pid*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

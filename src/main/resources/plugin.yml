@@ -1,7 +1,7 @@
 name: PluginUpdater-WB
 version: ${project.version}
 main: me.webbeck.pluginUpdater.PluginUpdater
-api-version: "26.1"
+api-version: "26.3"
 author: WebBeck
 description: Highly advanced, fully asynchronous plugin manager and updater for Paper.
 

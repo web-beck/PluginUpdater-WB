@@ -4,6 +4,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -63,16 +67,86 @@ public class UpdateChecker {
 
                 try {
                     UpdateInfo foundUpdate = null;
-                    if (type.equals("MODRINTH")) {
-                        foundUpdate = checkModrinth(pluginName, pSec.getString("project-id"), currentVer, allowedTypes, configManager.getPluginServerType(pluginName));
-                    } else if (type.equals("GITHUB")) {
+                    if (type.equals("GITHUB")) {
                         foundUpdate = checkGitHub(pluginName, pSec.getString("github-repo"), currentVer, allowedTypes);
-                    } else if (type.equals("HANGAR")) {
-                        foundUpdate = checkHangar(pluginName, pSec.getString("project-id"), currentVer, allowedTypes, configManager.getPluginServerType(pluginName));
-                    } else if (type.equals("SPIGOT")) {
-                        foundUpdate = checkSpigot(pluginName, pSec.getString("project-id"), currentVer);
                     } else if (type.equals("CUSTOM")) {
                         foundUpdate = new UpdateInfo(pluginName, currentVer, "Custom", pSec.getString("custom-url"), pluginName + "-update.jar");
+                    } else {
+                        // Each source uses its own stored ID; alternates are set during discovery
+                        String projectId  = pSec.getString("project-id");
+                        String serverType = configManager.getPluginServerType(pluginName);
+                        List<String> finalAllowedTypes = allowedTypes;
+
+                        String modrinthId = type.equals("MODRINTH") ? projectId : pSec.getString("alt-modrinth-id");
+                        String hangarId   = type.equals("HANGAR")   ? projectId : pSec.getString("alt-hangar-id");
+                        String spigotId   = type.equals("SPIGOT")   ? projectId : pSec.getString("alt-spigot-id");
+
+                        CompletableFuture<UpdateInfo> mFuture = modrinthId != null
+                            ? CompletableFuture.supplyAsync(() -> {
+                                try { return checkModrinth(pluginName, modrinthId, currentVer, finalAllowedTypes, serverType); } catch (Exception e) { return null; }
+                              })
+                            : CompletableFuture.completedFuture(null);
+                        CompletableFuture<UpdateInfo> hFuture = hangarId != null
+                            ? CompletableFuture.supplyAsync(() -> {
+                                try { return checkHangar(pluginName, hangarId, currentVer, finalAllowedTypes, serverType); } catch (Exception e) { return null; }
+                              })
+                            : CompletableFuture.completedFuture(null);
+                        CompletableFuture<UpdateInfo> sFuture = spigotId != null
+                            ? CompletableFuture.supplyAsync(() -> {
+                                try { return checkSpigot(pluginName, spigotId, currentVer); } catch (Exception e) { return null; }
+                              })
+                            : CompletableFuture.completedFuture(null);
+                        CompletableFuture.allOf(mFuture, hFuture, sFuture).join();
+
+                        UpdateInfo mResult = mFuture.join();
+                        UpdateInfo hResult = hFuture.join();
+                        UpdateInfo sResult = sFuture.join();
+
+                        // Prefer the configured source; fall back to alternates (each with its own correct ID)
+                        if (type.equals("HANGAR")) {
+                            foundUpdate = hResult != null ? hResult : (mResult != null ? mResult : sResult);
+                        } else if (type.equals("SPIGOT")) {
+                            foundUpdate = sResult != null ? sResult : (mResult != null ? mResult : hResult);
+                        } else {
+                            foundUpdate = mResult != null ? mResult : (hResult != null ? hResult : sResult);
+                        }
+                    }
+
+                    // GitHub fallback: if GitHub has no matching releases, try Modrinth/Hangar/Spigot
+                    if (foundUpdate == null && type.equals("GITHUB")) {
+                        String altM = pSec.getString("alt-modrinth-id");
+                        String altH = pSec.getString("alt-hangar-id");
+                        String altS = pSec.getString("alt-spigot-id");
+                        String fbServer = configManager.getPluginServerType(pluginName);
+                        List<String> fbTypes = allowedTypes;
+
+                        if (altM == null && altH == null && altS == null) {
+                            plugin.getLogger().info(pluginName + ": GitHub has no matching releases — detecting alternate sources");
+                            String detM = null, detH = null, detS = null;
+                            try { detM = configManager.getRealModrinthId(pluginName); } catch (Exception ignored) {}
+                            try { detH = configManager.getRealHangarId(pluginName);   } catch (Exception ignored) {}
+                            try { detS = configManager.getRealSpigotId(pluginName);   } catch (Exception ignored) {}
+                            altM = detM; altH = detH; altS = detS;
+                            if (detM != null || detH != null || detS != null) {
+                                final String fm = detM, fh = detH, fs = detS;
+                                Bukkit.getScheduler().runTask(plugin, () -> {
+                                    plugin.getConfig().set("plugins." + pluginName + ".alt-modrinth-id", fm);
+                                    plugin.getConfig().set("plugins." + pluginName + ".alt-hangar-id",   fh);
+                                    plugin.getConfig().set("plugins." + pluginName + ".alt-spigot-id",   fs);
+                                    configManager.saveAndFormatConfig();
+                                });
+                            }
+                        }
+
+                        if (foundUpdate == null && altM != null) {
+                            try { foundUpdate = checkModrinth(pluginName, altM, currentVer, fbTypes, fbServer); } catch (Exception ignored) {}
+                        }
+                        if (foundUpdate == null && altH != null) {
+                            try { foundUpdate = checkHangar(pluginName, altH, currentVer, fbTypes, fbServer); } catch (Exception ignored) {}
+                        }
+                        if (foundUpdate == null && altS != null) {
+                            try { foundUpdate = checkSpigot(pluginName, altS, currentVer); } catch (Exception ignored) {}
+                        }
                     }
 
                     if (foundUpdate != null && (type.equals("CUSTOM") || !PluginUpdaterUtils.versionsMatch(currentVer, foundUpdate.newVersion))) {
@@ -98,69 +172,81 @@ public class UpdateChecker {
     }
 
     public void displayPluginList(CommandSender sender, String listMode) {
-        String header;
-        switch (listMode == null ? "pending" : listMode.toLowerCase()) {
-            case "all":
-                header = "=== All Enabled Plugins ===";
-                break;
-            case "versions":
-                header = "=== Plugin Versions ===";
-                break;
-            default:
-                header = "=== Pending Updates ===";
-                break;
+        String mode = listMode == null ? "pending" : listMode.toLowerCase();
+        ConfigurationSection pSec = plugin.getConfig().getConfigurationSection("plugins");
+        if (pSec == null) return;
+
+        List<String> sortedKeys = new ArrayList<>(pSec.getKeys(false));
+        sortedKeys.sort(String.CASE_INSENSITIVE_ORDER);
+        List<String> enabled = new ArrayList<>();
+        for (String k : sortedKeys) {
+            if (pSec.getBoolean(k + ".enabled", true)) enabled.add(k);
         }
 
-        plugin.sendMsg(sender, ChatColor.GOLD + header);
-        ConfigurationSection pSec = plugin.getConfig().getConfigurationSection("plugins");
-        if (pSec != null) {
-            boolean foundAny = false;
-            List<String> sortedKeys = new ArrayList<>(pSec.getKeys(false));
-            sortedKeys.sort(String.CASE_INSENSITIVE_ORDER);
+        if (mode.equals("all")) {
+            int totalEnabled = enabled.size();
+            int totalPending = (int) enabled.stream().filter(k -> plugin.getPendingUpdates().containsKey(k.toLowerCase())).count();
+            int totalUpToDate = totalEnabled - totalPending;
 
-            for (String pName : sortedKeys) {
-                if (!pSec.getBoolean(pName + ".enabled", true)) continue;
+            // Header
+            sender.sendMessage(Component.text("━━━[ ", NamedTextColor.GOLD)
+                    .append(Component.text("All Plugins", NamedTextColor.AQUA))
+                    .append(Component.text(" (" + totalEnabled + ")", NamedTextColor.DARK_GRAY))
+                    .append(Component.text(" ]━━━", NamedTextColor.GOLD)));
 
-                String serverType = configManager.getPluginServerType(pName);
+            for (String pName : enabled) {
                 String sourceType = configManager.getPluginSourceType(pName);
                 Plugin p = Bukkit.getPluginManager().getPlugin(pName);
-                String currentVersion = p != null ? p.getDescription().getVersion() : pSec.getString(pName + ".current-version", "Unknown");
+                String currentVersion = p != null ? p.getDescription().getVersion()
+                        : pSec.getString(pName + ".current-version", "?");
                 UpdateInfo info = plugin.getPendingUpdates().get(pName.toLowerCase());
 
-                if (listMode.equalsIgnoreCase("all") || listMode.equalsIgnoreCase("versions")) {
-                    StringBuilder line = new StringBuilder();
-                    line.append(ChatColor.AQUA).append(pName);
-                    line.append(ChatColor.DARK_GRAY).append(" [").append(sourceType).append("]");
-                    line.append(ChatColor.YELLOW).append(" [").append(serverType.toUpperCase()).append("]");
-                    line.append(ChatColor.GRAY).append(" [CUR ").append(currentVersion).append("]");
+                // Name — clickable to show plugin info
+                Component line = Component.text(" ")
+                        .append(Component.text(pName, NamedTextColor.AQUA)
+                                .clickEvent(ClickEvent.runCommand("/upd plugin info " + pName))
+                                .hoverEvent(HoverEvent.showText(Component.text("Click for details", NamedTextColor.GRAY))))
+                        .append(Component.text("  ", NamedTextColor.DARK_GRAY))
+                        .append(Component.text("[" + sourceType + "]", NamedTextColor.DARK_GRAY))
+                        .append(Component.text("  " + currentVersion, NamedTextColor.GRAY));
 
-                    if (info != null) {
-                        line.append(ChatColor.GRAY).append(" -> ");
-                        line.append(ChatColor.AQUA).append("[").append(info.newVersion).append("]");
-                        line.append(ChatColor.RED).append(" [UPDATE AVAILABLE]");
-                    } else {
-                        line.append(ChatColor.GREEN).append(" [UP TO DATE]");
-                    }
-
-                    if (listMode.equalsIgnoreCase("versions") && info == null) {
-                        line = new StringBuilder();
-                        line.append(ChatColor.AQUA).append(pName);
-                        line.append(ChatColor.DARK_GRAY).append(" [").append(sourceType).append("]");
-                        line.append(ChatColor.YELLOW).append(" [").append(serverType.toUpperCase()).append("]");
-                        line.append(ChatColor.GRAY).append(" [CUR ").append(currentVersion).append("]");
-                        line.append(ChatColor.GREEN).append(" [UP TO DATE]");
-                    }
-
-                    plugin.sendMsg(sender, line.toString());
-                    foundAny = true;
+                if (info != null) {
+                    line = line
+                            .append(Component.text("  →  ", NamedTextColor.DARK_GRAY))
+                            .append(Component.text(info.newVersion, NamedTextColor.YELLOW))
+                            .append(Component.text("  "))
+                            .append(Component.text("[UPDATE]", NamedTextColor.GREEN)
+                                    .clickEvent(ClickEvent.runCommand("/upd run " + pName))
+                                    .hoverEvent(HoverEvent.showText(Component.text("Click to update " + pName, NamedTextColor.YELLOW))));
                 } else {
-                    if (info != null) {
-                        plugin.sendInteractiveListMsg(sender, pName, info.oldVersion, info.newVersion, true);
-                        foundAny = true;
-                    }
+                    line = line.append(Component.text("  ✔", NamedTextColor.DARK_GREEN));
+                }
+
+                sender.sendMessage(line);
+            }
+
+            // Footer summary
+            Component footer = Component.text("─── ", NamedTextColor.DARK_GRAY)
+                    .append(Component.text(totalUpToDate + " up to date", NamedTextColor.GREEN));
+            if (totalPending > 0) {
+                footer = footer
+                        .append(Component.text("  •  ", NamedTextColor.DARK_GRAY))
+                        .append(Component.text(totalPending + " update" + (totalPending != 1 ? "s" : "") + " available", NamedTextColor.GOLD));
+            }
+            footer = footer.append(Component.text(" ───", NamedTextColor.DARK_GRAY));
+            sender.sendMessage(footer);
+
+        } else {
+            // Pending updates list
+            boolean foundAny = false;
+            for (String pName : enabled) {
+                UpdateInfo info = plugin.getPendingUpdates().get(pName.toLowerCase());
+                if (info != null) {
+                    plugin.sendInteractiveListMsg(sender, pName, info.oldVersion, info.newVersion, true);
+                    foundAny = true;
                 }
             }
-            if (!foundAny && listMode.equalsIgnoreCase("pending")) {
+            if (!foundAny) {
                 plugin.sendMsg(sender, ChatColor.GREEN + "All tracked plugins are currently up to date!");
             }
         }
@@ -172,6 +258,10 @@ public class UpdateChecker {
 
     public String getRealSpigotId(String pluginName) throws Exception {
         return configManager.getRealSpigotId(pluginName);
+    }
+
+    public String getRealHangarId(String pluginName) throws Exception {
+        return configManager.getRealHangarId(pluginName);
     }
 
     UpdateInfo checkModrinth(String pluginName, String projectId, String currentVer, List<String> allowedTypes, String serverType) throws Exception {
@@ -397,5 +487,57 @@ public class UpdateChecker {
             latestVersions.put("release", vObj.get("name").getAsString());
         }
         return latestVersions;
+    }
+
+    /**
+     * Fetches available version channels for a plugin, with automatic fallback:
+     * primary source → stored alt IDs → live detection (cached on first run).
+     */
+    public Map<String, String> fetchAllChannelsWithFallback(
+            String pluginName, String type,
+            org.bukkit.configuration.ConfigurationSection pSec, String serverType) throws Exception {
+
+        Map<String, String> versions = new HashMap<>();
+
+        // 1. Try the configured primary source
+        String projectId  = pSec.getString("project-id");
+        String githubRepo = pSec.getString("github-repo");
+        switch (type) {
+            case "MODRINTH": if (projectId  != null) versions.putAll(fetchAllChannelsModrinth(projectId, serverType)); break;
+            case "HANGAR":   if (projectId  != null) versions.putAll(fetchAllChannelsHangar(projectId));               break;
+            case "SPIGOT":   if (projectId  != null) versions.putAll(fetchAllChannelsSpigot(projectId));               break;
+            case "GITHUB":   if (githubRepo != null) versions.putAll(fetchAllChannelsGitHub(githubRepo));              break;
+        }
+        if (!versions.isEmpty()) return versions;
+
+        // 2. Try stored alternate source IDs
+        String altM = pSec.getString("alt-modrinth-id");
+        String altH = pSec.getString("alt-hangar-id");
+        String altS = pSec.getString("alt-spigot-id");
+
+        // 3. No alternates stored — do live detection and cache for future calls
+        if (altM == null && altH == null && altS == null) {
+            String detM = null, detH = null, detS = null;
+            try { detM = configManager.getRealModrinthId(pluginName); } catch (Exception ignored) {}
+            try { detH = configManager.getRealHangarId(pluginName);   } catch (Exception ignored) {}
+            try { detS = configManager.getRealSpigotId(pluginName);   } catch (Exception ignored) {}
+            if (detM != null || detH != null || detS != null) {
+                altM = detM; altH = detH; altS = detS;
+                final String fm = detM, fh = detH, fs = detS;
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (!type.equals("MODRINTH")) plugin.getConfig().set("plugins." + pluginName + ".alt-modrinth-id", fm);
+                    if (!type.equals("HANGAR"))   plugin.getConfig().set("plugins." + pluginName + ".alt-hangar-id",   fh);
+                    if (!type.equals("SPIGOT"))   plugin.getConfig().set("plugins." + pluginName + ".alt-spigot-id",   fs);
+                    configManager.saveAndFormatConfig();
+                });
+            }
+        }
+
+        // 4. Try each alternate in order until one returns versions
+        if (altM != null && !type.equals("MODRINTH")) versions.putAll(fetchAllChannelsModrinth(altM, serverType));
+        if (versions.isEmpty() && altH != null && !type.equals("HANGAR")) versions.putAll(fetchAllChannelsHangar(altH));
+        if (versions.isEmpty() && altS != null && !type.equals("SPIGOT")) versions.putAll(fetchAllChannelsSpigot(altS));
+
+        return versions;
     }
 }
