@@ -92,11 +92,11 @@ public class PluginUpdater extends JavaPlugin implements Listener {
             if (needsUpdate) {
                 if (sender instanceof Player) {
                     Component btn = Component.text("[CLICK TO UPDATE]", NamedTextColor.GREEN)
-                            .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/upd run " + name))
+                            .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/upd update " + name))
                             .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(Component.text("Click to download update", NamedTextColor.YELLOW)));
                     tc = tc.append(btn);
                 } else {
-                    tc = tc.append(Component.text("[Use /upd run " + name + "]", NamedTextColor.GREEN));
+                    tc = tc.append(Component.text("[Use /upd update " + name + "]", NamedTextColor.GREEN));
                 }
             } else {
                 tc = tc.append(Component.text("[UP TO DATE]", NamedTextColor.GREEN));

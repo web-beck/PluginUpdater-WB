@@ -204,7 +204,7 @@ public class UpdateChecker {
                 // Name — clickable to show plugin info
                 Component line = Component.text(" ")
                         .append(Component.text(pName, NamedTextColor.AQUA)
-                                .clickEvent(ClickEvent.runCommand("/upd plugin info " + pName))
+                                .clickEvent(ClickEvent.runCommand("/upd info " + pName))
                                 .hoverEvent(HoverEvent.showText(Component.text("Click for details", NamedTextColor.GRAY))))
                         .append(Component.text("  ", NamedTextColor.DARK_GRAY))
                         .append(Component.text("[" + sourceType + "]", NamedTextColor.DARK_GRAY))
@@ -216,7 +216,7 @@ public class UpdateChecker {
                             .append(Component.text(info.newVersion, NamedTextColor.YELLOW))
                             .append(Component.text("  "))
                             .append(Component.text("[UPDATE]", NamedTextColor.GREEN)
-                                    .clickEvent(ClickEvent.runCommand("/upd run " + pName))
+                                    .clickEvent(ClickEvent.runCommand("/upd update " + pName))
                                     .hoverEvent(HoverEvent.showText(Component.text("Click to update " + pName, NamedTextColor.YELLOW))));
                 } else {
                     line = line.append(Component.text("  ✔", NamedTextColor.DARK_GREEN));

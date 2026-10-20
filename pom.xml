@@ -6,7 +6,7 @@
 
     <groupId>me.webbeck.pluginupdater</groupId>
     <artifactId>PluginUpdater-WB</artifactId>
-    <version>26.2-1.0.4-dev1</version>
+    <version>26.3-1.0.0</version>
     <packaging>jar</packaging>
 
     <name>PluginUpdater-WB</name>
@@ -32,7 +32,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>26.2.build.30-alpha</version>
+            <version>26.3.build.206-stable</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

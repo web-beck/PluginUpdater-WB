@@ -750,7 +750,7 @@ public class ConfigManager {
             if (pluginName == null) {
                 pluginName = slug.replaceAll("[^A-Za-z0-9_-]", "");
                 if (pluginName.isEmpty()) {
-                    plugin.sendMsg(sender, ChatColor.RED + "Could not infer a plugin name from the URL. Please use /upd plugin id instead.");
+                    plugin.sendMsg(sender, ChatColor.RED + "Could not infer a plugin name from the URL. Please use /upd source instead.");
                     return null;
                 }
             }
@@ -779,7 +779,7 @@ public class ConfigManager {
             saveAndFormatConfig();
             plugin.sendMsg(sender, ChatColor.GREEN + "Added plugin config for " + pluginName + " using source " + type + ".");
             if (!type.equals("CUSTOM")) {
-                plugin.sendMsg(sender, ChatColor.AQUA + "Verify with /upd plugin info " + pluginName + " and adjust the ID if needed.");
+                plugin.sendMsg(sender, ChatColor.AQUA + "Verify with /upd info " + pluginName + " and adjust the ID if needed.");
             }
             return pluginName;
         } catch (Exception e) {

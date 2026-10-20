@@ -30,10 +30,10 @@ public class GeyserManager {
         String[] addons = {"Geyser", "Floodgate", "MCXboxBroadcast"};
 
         Component downloadAllBtn = Component.text("[DOWNLOAD MISSING]", NamedTextColor.GREEN)
-                .clickEvent(ClickEvent.runCommand("/upd plugin geyser download all"))
+                .clickEvent(ClickEvent.runCommand("/upd geyser download all"))
                 .hoverEvent(HoverEvent.showText(Component.text("Download any missing Geyser addons", NamedTextColor.YELLOW)));
         Component updateAllBtn = Component.text(" [UPDATE ALL]", NamedTextColor.LIGHT_PURPLE)
-                .clickEvent(ClickEvent.runCommand("/upd plugin geyser update all"))
+                .clickEvent(ClickEvent.runCommand("/upd geyser update all"))
                 .hoverEvent(HoverEvent.showText(Component.text("Force download latest versions for all Geyser addons", NamedTextColor.GOLD)));
         sender.sendMessage(LegacyComponentSerializer.legacySection().deserialize(ChatColor.GRAY + "Actions: ").append(downloadAllBtn).append(updateAllBtn));
 
@@ -47,16 +47,16 @@ public class GeyserManager {
             Component toggleBtn;
             if (isEnabled) {
                 toggleBtn = Component.text("[DISABLE]", NamedTextColor.RED)
-                        .clickEvent(ClickEvent.runCommand("/upd plugin geyser toggle " + addon + " false"))
+                        .clickEvent(ClickEvent.runCommand("/upd geyser disable " + addon))
                         .hoverEvent(HoverEvent.showText(Component.text("Disable updates for " + addon, NamedTextColor.YELLOW)));
             } else {
                 toggleBtn = Component.text("[ENABLE]", NamedTextColor.GREEN)
-                        .clickEvent(ClickEvent.runCommand("/upd plugin geyser toggle " + addon + " true"))
+                        .clickEvent(ClickEvent.runCommand("/upd geyser enable " + addon))
                         .hoverEvent(HoverEvent.showText(Component.text("Enable updates for " + addon, NamedTextColor.YELLOW)));
             }
 
             Component updateBtn = Component.text(" [UPDATE]", NamedTextColor.LIGHT_PURPLE)
-                    .clickEvent(ClickEvent.runCommand("/upd plugin geyser update " + addon))
+                    .clickEvent(ClickEvent.runCommand("/upd geyser update " + addon))
                     .hoverEvent(HoverEvent.showText(Component.text("Force download latest " + addon, NamedTextColor.GOLD)));
 
             if (isEnabled) {

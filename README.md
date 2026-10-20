@@ -2,7 +2,7 @@
 
 > Highly advanced, fully asynchronous plugin manager and updater for Paper servers.
 
-**Version:** `26.2` &nbsp;|&nbsp; **API Version:** `26.2` &nbsp;|&nbsp; **Java:** 25+ &nbsp;|&nbsp; **Author:** WebBeck
+**Version:** `26.3-1.0.0` &nbsp;|&nbsp; **API Version:** `26.3` &nbsp;|&nbsp; **Java:** 25+ &nbsp;|&nbsp; **Author:** WebBeck
 
 ---
 
@@ -25,14 +25,14 @@ PluginUpdater-WB automates keeping your Paper server's plugins up to date. It ch
 
 ## 📋 Requirements
 
-- Paper (or compatible fork) running **API version 26.2**
+- Paper (or compatible fork) running **API version 26.3**
 - Java **25** or newer
 
 ---
 
 ## 🚀 Installation
 
-1. Download `PluginUpdater-WB-26.2-1.0.4.jar` and drop it into your server's `plugins/` folder.
+1. Download `PluginUpdater-WB-26.3-1.0.0.jar` and drop it into your server's `plugins/` folder.
 2. Start (or restart) your server. The plugin will generate `config.yml` and auto-populate it with entries for every plugin currently loaded.
 3. Edit `config.yml` to enable or tune tracking for each plugin (see [Configuration](#%EF%B8%8F-configuration) below).
 4. Run `/upd reload` to apply changes without restarting.
@@ -45,7 +45,7 @@ PluginUpdater-WB automates keeping your Paper server's plugins up to date. It ch
 
 ```yaml
 # Minecraft version used for Modrinth queries. Leave blank to auto-detect.
-minecraft-version: '26.2'
+minecraft-version: '26.3'
 
 # Players allowed to run commands without OP or the permission node.
 allowed-players:
@@ -128,14 +128,23 @@ The main command is `/updater` (alias: `/upd`). Requires the `pluginupdater.admi
 
 | Command | Description |
 |---|---|
-| `/upd help` | Show all available subcommands |
-| `/upd -v` | Display the plugin version |
-| `/upd check` | Run an async update check across all enabled plugins |
-| `/upd run` | Download and install all available updates |
-| `/upd list` | List all tracked plugins and their current status |
+| `/upd help` | Show all commands (click one to use it) |
+| `/upd check` | Check all plugins for updates |
+| `/upd update [plugin]` | Install pending updates (all, or just one plugin) |
+| `/upd list [all\|enabled\|disabled]` | Show pending updates, or plugins by status |
+| `/upd info <plugin>` | Versions, source and tracking for a plugin |
+| `/upd add <url>` | Add and download a plugin from a Modrinth/Hangar/Spigot/GitHub link |
+| `/upd enable <plugin>` / `/upd disable <plugin>` | Start or stop checking a plugin for updates |
+| `/upd track <plugin\|all> <release\|beta\|alpha\|all>` | Choose which release channel to follow |
+| `/upd server <plugin\|all> <auto\|paper\|spigot\|folia\|purpur>` | Choose which server build to download |
+| `/upd source <plugin> [Modrinth\|Hangar\|Spigot\|GitHub\|Custom] [id/url]` | Find or set where a plugin downloads from |
+| `/upd redownload <plugin>` | Force a fresh download of a plugin |
+| `/upd rollback <plugin>` | Restore a plugin from a backup |
+| `/upd geyser [enable\|disable\|download\|update] [addon\|all]` | Manage Geyser, Floodgate and MCXboxBroadcast |
 | `/upd reload` | Reload `config.yml` without restarting the server |
-| `/upd plugin <name>` | Check, update, or manage a specific plugin |
-| `/upd plugin geyser` | Manage Geyser ecosystem addons (requires `geyser-addons.enabled: true`) |
+| `/upd version` | Show the plugin version |
+
+Old forms like `/upd run`, `/upd -v` and `/upd plugin <command> ...` still work.
 
 ---
 

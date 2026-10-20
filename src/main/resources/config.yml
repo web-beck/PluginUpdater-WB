@@ -24,7 +24,7 @@ tracking-type: 'all'
 #              Geyser Addons                 #
 # ========================================== #
 # Manages direct downloads for Geyser, Floodgate, and MCXboxBroadcast.
-# Turn enabled to 'true' to manage them via '/upd plugin geyser'
+# Turn enabled to 'true' to manage them via '/upd geyser'
 geyser-addons:
   enabled: false
   Geyser: true
@@ -71,7 +71,7 @@ plugins:
       - release
     current-version: 1.0.0
 
-  # Example of a Custom URL (Bypasses checking logic, will simply download the jar when '/upd run CustomPlugin' is used)
+  # Example of a Custom URL (Bypasses checking logic, will simply download the jar when '/upd update CustomPlugin' is used)
   CustomPlugin-Example:
     enabled: false
     type: CUSTOM
